@@ -515,10 +515,10 @@ contains
         logical                                              :: break_ = .false.
         !------------------------------------------------------------------------------------------!
         if (present(break)) break_ = break
-        allocate(character(256) :: var)
         call get_value(keyword,data_file,val_st,iost)
 
         if ( iost == 0 ) then
+            allocate(character(256) :: var)
             read(val_st,fmt='(A)',IOSTAT=iost) var
             var = trim(var)
         end if
@@ -549,7 +549,7 @@ contains
 
         call get_value(keyword, data_file, val_st, iost)
         if ( iost == 0 ) then
-            read(val_st,fmt='(L1)',IOSTAT=iost) var
+            read(val_st,fmt='(L6)',IOSTAT=iost) var
         end if
         if ( iost == -1 ) then
             if (.not. break_) then
