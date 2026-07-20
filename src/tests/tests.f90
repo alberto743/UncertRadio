@@ -40,6 +40,14 @@ contains
 
         call test_write_text_file()
 
+        call test_read_config_char()
+
+        call test_read_config_logical()
+
+        call test_read_config_int()
+
+        call test_read_config_real()
+
         call test_str_replace()
 
         call test_color_themes()
@@ -470,6 +478,222 @@ contains
             write(*, '(4X, A,I0,A)') "write_text_file: Warning, found ", errors, " error(s)"
         end if
     end subroutine test_write_text_file
+
+    !---------------------------------------------------------------------------------------------!
+    !  read_config tests (file_io module)
+    !---------------------------------------------------------------------------------------------!
+
+    subroutine test_read_config_char()
+        ! Test read_config with allocatable character target.
+        use file_io, only: read_config
+        use chf,     only: flfu
+        implicit none
+
+        character(len=:), allocatable :: tmp_str
+        character(len=64)             :: cfg_file
+        integer                       :: errors, nio, iostat
+
+        errors = 0
+        cfg_file = 'test_cfg_char.dat'
+
+        ! Create temp config
+        open(newunit=nio, file=flfu(cfg_file), iostat=iostat, status='new', action='write')
+        write(nio, '(A)') 'CharKey=some value here'
+        close(nio)
+
+        ! Test 1: Read existing key
+        call read_config('CharKey', tmp_str, cfg_file, break=.true.)
+        if (.not. allocated(tmp_str)) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Char test 1 failed: tmp_str is unallocated"
+        else if (tmp_str /= 'some value here') then
+            errors = errors + 1
+            write(*,'(4X,A)') "Char test 1 failed: expected 'some value here', got '" // trim(tmp_str) // "'"
+        end if
+        if (allocated(tmp_str)) deallocate(tmp_str)
+
+        ! Test 2: Missing key with break=.true. -> stays unallocated
+        call read_config('MissingKey', tmp_str, cfg_file, break=.true.)
+        if (allocated(tmp_str)) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Char test 2 failed: tmp_str should be unallocated for missing key"
+            deallocate(tmp_str)
+        end if
+
+        ! Cleanup
+        open(newunit=nio, file=flfu(cfg_file), status='old')
+        close(nio, status='delete')
+
+        if (errors == 0) then
+            write(*,'(4X,A)') "read_config (char): no errors"
+        else
+            write(*,'(4X, A,I0,A)') "read_config (char): Warning, found ", errors, " error(s)"
+        end if
+    end subroutine test_read_config_char
+
+    subroutine test_read_config_logical()
+        ! Test read_config with logical target.
+        use file_io, only: read_config
+        use chf,     only: flfu
+        implicit none
+
+        logical                       :: val
+        character(len=64)             :: cfg_file
+        integer                       :: errors, nio
+
+        errors = 0
+        cfg_file = 'test_cfg_logical.dat'
+
+        ! Create temp config
+        open(newunit=nio, file=flfu(cfg_file), status='new', action='write')
+        write(nio, '(A)') 'LogTrue=.true.'
+        write(nio, '(A)') 'LogFalse=.false.'
+        write(nio, '(A)') 'LogTrueUpper=.TRUE.'
+        write(nio, '(A)') 'LogFalseUpper=.FALSE.'
+        close(nio)
+
+        ! Test 1: .true.
+        val = .false.
+        call read_config('LogTrue', val, cfg_file, break=.true.)
+        if (.not. val) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Log test 1 failed: expected .true., got .false."
+        end if
+
+        ! Test 2: .false.
+        val = .true.
+        call read_config('LogFalse', val, cfg_file, break=.true.)
+        if (val) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Log test 2 failed: expected .false., got .true."
+        end if
+
+        ! Test 3: .TRUE. (uppercase)
+        val = .false.
+        call read_config('LogTrueUpper', val, cfg_file, break=.true.)
+        if (.not. val) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Log test 3 failed: expected .true., got .false."
+        end if
+
+        ! Test 4: .FALSE. (uppercase)
+        val = .true.
+        call read_config('LogFalseUpper', val, cfg_file, break=.true.)
+        if (val) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Log test 4 failed: expected .false., got .true."
+        end if
+
+        ! Test 5: Missing key with break=.true. -> default preserved
+        val = .true.
+        call read_config('MissingKey', val, cfg_file, break=.true.)
+        if (.not. val) then
+            errors = errors + 1
+            write(*,'(4X,A)') "Log test 5 failed: default .true. not preserved for missing key"
+        end if
+
+        ! Cleanup
+        open(newunit=nio, file=flfu(cfg_file), status='old')
+        close(nio, status='delete')
+
+        if (errors == 0) then
+            write(*,'(4X,A)') "read_config (logical): no errors"
+        else
+            write(*,'(4X, A,I0,A)') "read_config (logical): Warning, found ", errors, " error(s)"
+        end if
+    end subroutine test_read_config_logical
+
+    subroutine test_read_config_int()
+        ! Test read_config with integer target.
+        use file_io, only: read_config
+        use chf,     only: flfu
+        implicit none
+
+        integer                       :: val
+        character(len=64)             :: cfg_file
+        integer                       :: errors, nio
+
+        errors = 0
+        cfg_file = 'test_cfg_int.dat'
+
+        ! Create temp config
+        open(newunit=nio, file=flfu(cfg_file), status='new', action='write')
+        write(nio, '(A)') 'IntKey=42'
+        close(nio)
+
+        ! Test 1: Read existing key
+        val = 0
+        call read_config('IntKey', val, cfg_file, break=.true.)
+        if (val /= 42) then
+            errors = errors + 1
+            write(*,'(4X,A,I0)') "Int test 1 failed: expected 42, got ", val
+        end if
+
+        ! Test 2: Missing key with break=.true. -> default preserved
+        val = 999
+        call read_config('MissingKey', val, cfg_file, break=.true.)
+        if (val /= 999) then
+            errors = errors + 1
+            write(*,'(4X,A,I0)') "Int test 2 failed: default 999 not preserved, got ", val
+        end if
+
+        ! Cleanup
+        open(newunit=nio, file=flfu(cfg_file), status='old')
+        close(nio, status='delete')
+
+        if (errors == 0) then
+            write(*,'(4X,A)') "read_config (int): no errors"
+        else
+            write(*,'(4X, A,I0,A)') "read_config (int): Warning, found ", errors, " error(s)"
+        end if
+    end subroutine test_read_config_int
+
+    subroutine test_read_config_real()
+        ! Test read_config with real target.
+        use file_io, only: read_config
+        use chf,     only: flfu
+        use UR_params, only: EPS1MIN
+        use UR_types, only: rn
+        implicit none
+
+        real(rn)                      :: val
+        character(len=64)             :: cfg_file
+        integer                       :: errors, nio
+
+        errors = 0
+        cfg_file = 'test_cfg_real.dat'
+
+        ! Create temp config
+        open(newunit=nio, file=flfu(cfg_file), status='new', action='write')
+        write(nio, '(A)') 'RealKey=3.14159265'
+        close(nio)
+
+        ! Test 1: Read existing key
+        val = 0.0_rn
+        call read_config('RealKey', val, cfg_file, break=.true.)
+        if (abs(val - 3.14159265_rn) > EPS1MIN) then
+            errors = errors + 1
+            write(*,'(4X,A,ES20.12)') "Real test 1 failed: expected 3.14159265, got ", val
+        end if
+
+        ! Test 2: Missing key with break=.true. -> default preserved
+        val = 999.0_rn
+        call read_config('MissingKey', val, cfg_file, break=.true.)
+        if (abs(val - 999.0_rn) > EPS1MIN) then
+            errors = errors + 1
+            write(*,'(4X,A,ES20.12)') "Real test 2 failed: default 999.0 not preserved, got ", val
+        end if
+
+        ! Cleanup
+        open(newunit=nio, file=flfu(cfg_file), status='old')
+        close(nio, status='delete')
+
+        if (errors == 0) then
+            write(*,'(4X,A)') "read_config (real): no errors"
+        else
+            write(*,'(4X, A,I0,A)') "read_config (real): Warning, found ", errors, " error(s)"
+        end if
+    end subroutine test_read_config_real
 
     !---------------------------------------------------------------------------------------------!
 
