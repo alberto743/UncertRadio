@@ -798,7 +798,8 @@ contains
         use UR_params, only: UR2_CFG_FILE
 
         use ur_general_globals, only: sDecimalPoint, sListSeparator, &
-                                      data_path, automode, dir_sep, user_cfg_path
+                                      data_path, automode, dir_sep, user_cfg_path, &
+                                      fname_getarg
 
         use CHF,                only: lowercase
         use UR_gtk_globals,     only: monitorUR
@@ -816,6 +817,7 @@ contains
 
         ! Default values
         monitorUR     = 0
+        fname_getarg  = ''
         langg         = ''
         contrast_mode = .false.
         apply_units   = .false.
