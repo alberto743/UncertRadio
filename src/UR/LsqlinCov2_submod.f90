@@ -546,18 +546,16 @@ contains
         integer          :: i, kn, k, mm0
         real(rn)         :: aFunc(maL)
 
-        real(rn),allocatable :: cs(:),xh(:),cpy(:), Ux(:,:)
+        real(rn),allocatable :: cs(:),xh(:), Ux(:,:)
         character(len=512)   :: log_str
         !-----------------------------------------------------------------------
 
-        allocate(cs(n), xh(nr), cpy(n))
+        allocate(cs(n), xh(nr))
         allocate(Ux(n,n))
 
-        cpy(1:n) = x(1:n)
         ifehl = 0
         ! Prepare the design matrix A (amt), dimension (n x nr), it refers only to parameters
         ! to be fitted (according to the array ifit):
-        a(1:n,1:nr) = ZERO
 
         IF(kPMLE == 1) THEN
             if(allocated(xa)) deallocate(xA)
