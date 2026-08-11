@@ -53,6 +53,9 @@ module num1
             integer   ,intent(out)    :: keqnumber(ma) ! function values of associated with the ma fit parameters
         end subroutine findeq_afunc
 
+        module subroutine buildKEQnums()
+        end subroutine buildKEQnums
+
         module subroutine find_mac(mac)
             integer, intent(out)    :: mac
         end subroutine find_mac

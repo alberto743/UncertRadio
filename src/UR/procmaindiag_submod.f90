@@ -135,6 +135,7 @@ contains
         use CHF,                 only: FindLocT,lowercase,ucase
         use LDN,                 only: Loadsel_diag_new
         use Celli,               only: PrepEli, Confidoid
+        use Num1,                  only: buildKEQnums
         use RG,                  only: Read_Gleich, modify_Formeltext
         use UR_params,           only: EPS1MIN,ZERO,ONE
         use fparser,             only: initf,parsef
@@ -360,6 +361,10 @@ contains
                         call WrStatusBar(4, T("Eliminate error(s) in equations or in the symbol list!"))
                         GOTO 9000
                     END IF
+
+                    ! Build kEQnums table if not already allocated (project load or change)
+                    call buildKEQnums()
+
                     if(.not.batest_on .and. .not.automode) then
                         if(consoleout_gtk) write(0,*) 'PMD 298, LoadCompletedSyms: before WDListstoreFill_1(liststore_symbols)'
                         !!      call WDListstoreFill_1('liststore_symbols', ngrs, Symbole)

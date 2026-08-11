@@ -71,11 +71,10 @@ contains
 
         use UR_Gleich_globals,   only: kpoint, messwert
         use ur_linft,            only: ma, k_tmess, kpmle, k_tstart, &
-                                       mfrbg, nchannels, numd, dmesszeit, dtdiff, ifit, &
+                                       mfrbg, dmesszeit, dtdiff, ifit, &
                                        keqnums, mac
 
         use fparser,             only: evalf
-        use usub3,               only: findmessk
 
         use rout,                only: messageshow
         use gtk,                 only: gtk_buttons_ok, gtk_message_warning
@@ -87,7 +86,7 @@ contains
         integer, intent(in)   :: ix         ! number of the xi= decay curve function
         real(rn), intent(out) :: afunc(ma)  ! function values associated with the ma fit parameters
 
-        integer               :: i, ii, messk, keqnumber(3)
+        integer               :: i, ii
         integer(c_int)        :: resp
 
         character(1024) :: str1
@@ -121,9 +120,6 @@ contains
         !
         !-----------------------------------------------------------------------
 
-        ! Find the measurement channel (A,B C):
-        messk = FindMessk(ix)
-
         !  store tmess and tstart in elements of Messwert, for the ix-th value of the decay curve:
         Messwert(kpoint(k_tmess)) = dmesszeit(ix)    ! counting time tmess
         Messwert(kpoint(k_tstart)) = dtdiff(ix)      ! time difference to the time of chemical separation
@@ -144,16 +140,16 @@ contains
             return
         end if
 
-        if(allocated(kEQnums)) deallocate(kEQnums)   ! 21.6.2024
-        allocate(kEQnums(nchannels*numd,3))
+        ! build kEQnums table once per project (see procmaindiag: call buildKEQnums())
+        call buildKEQnums()
 
-
-        do i = 1, nchannels*numd
-            call findEq_afunc(i, kEQnumber)
-            kEQnums(i, 1:3) = kEQnumber(1:3)
-        end do
-
-        do i = 1, mac
+        ii = kEQnums(ix, 1)
+        if(kPMLE == 1 .and. mfrbg == 1 .and. ifit(1) == 3) then
+            afunc(1) = 1.0_rn
+        else
+            afunc(1) = evalf(ii, Messwert)
+        end if
+        do i = 2, mac
             ii = kEQnums(ix, i)
             if (kPMLE == 1 .and. i == mfrbg .and. ifit(i) == 3) then
                 afunc(i) = 1.0_rn
@@ -213,6 +209,34 @@ contains
         end if
 
     end subroutine findEQ_afunc
+
+!#######################################################################
+
+    module subroutine buildKEQnums()
+
+        ! Builds the kEQnums table. The table is created once and kept until
+        ! it is invalidated by a deallocate (e.g. UncW_Init on project change
+        ! or equation edits). It is NOT rebuilt if no changes occurred.
+        ! Guard: if already allocated, returns immediately without rebuilding.
+        ! Called from procmaindiag after Symbol1() and from funcs() as guard.
+
+        use ur_linft, only: ma, nchannels, numd, mac, kEQnums
+
+        implicit none
+
+        integer :: i, kEQnumber(ma)
+
+        if(allocated(kEQnums)) return
+
+        allocate(kEQnums(nchannels*numd, ma))
+
+        mac = 0
+        do i = 1, nchannels*numd
+            call findEq_afunc(i, kEQnumber)
+            kEQnums(i, 1:3) = kEQnumber(1:3)
+        end do
+
+    end subroutine buildKEQnums
 
 !#######################################################################
 
