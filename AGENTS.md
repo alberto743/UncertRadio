@@ -101,10 +101,6 @@ cmake --install build --prefix=install
 ```bash
 # GUI batch test
 ./bin/UncertRadio run_tests
-
-# Docker test
-docker run --rm uncertradio-release \
-  bash -c "/app/install/bin/UncertRadio run_tests"
 ```
 
 ### Test Data
