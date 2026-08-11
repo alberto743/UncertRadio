@@ -99,9 +99,15 @@ cmake --install build --prefix=install
 
 ### Running Tests
 ```bash
-# GUI batch test
-./bin/UncertRadio run_tests
+# Install first, then run via xvfb-run
+cmake --install build --prefix=./install
+cd install && xvfb-run -a ./bin/UncertRadio run_tests
 ```
+
+### Important: No Display, Always Install, xvfb-run Limitations
+1. **No real display available** — the agent runs headless. UR requires GTK which needs a display. Use `xvfb-run -a` for anything that needs one.
+2. **Always install before running** — build from `build/bin/UncertRadio` fails because shared data files (examples, translations, config) are missing. Run `cmake --install build --prefix=./install` first, then execute from `./install/bin/UncertRadio`.
+3. **`xvfb-run` only works for `run_tests`** — the `run_tests` CLI argument puts UR in batch mode (`automode=true`) which exits after all tests. Any other invocation (`--load`, interactive GUI) will open a window and hang forever waiting for user input. Do NOT use `xvfb-run` to test individual `.txp` project files by loading them — it will block. To test a single project file, add it to `BatListRef_v06.txt` and run `run_tests`, or use a timeout-killed xvfb-run.
 
 ### Test Data
 - **Examples:** `examples/en/` and `examples/de/` (~70 project files)
@@ -162,6 +168,8 @@ Key variables in `ur_general_globals` module:
 3. **Numerical precision** issues with `-ffast-math` on some architectures
 4. **Module dependencies** are complex - trace carefully before changes
 5. **Global state** in `UR_globals` - avoid adding more global variables
+6. **`run_tests` binary must be from `install/`, not `build/`** — missing data files cause silent failures or STOP 4
+7. **`xvfb-run` hangs on GUI mode** — `--load file.txp` or launching without `run_tests` opens a GTK window that never exits; use `xvfb-run` only with `run_tests` argument
 
 ### Code Organization
 - Calculation logic is separate from GUI handling

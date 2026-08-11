@@ -19,8 +19,8 @@
 
 module LMG
 
-    use UR_types
-    USE UR_Params
+    use UR_types,        only: rn
+    use UR_params,       only: EPS1MIN, ZERO, ONE, TWO
     implicit none
 
 contains
@@ -453,7 +453,13 @@ contains
 
             !  rho = (X2 - X2_try) / ( h' * (lambda * h + JtWdy) );
             dummy = dot_product(hFit, matmul(transpose(lam_diagFit),hFit) + JtWdyFit)
-            rho = (X2 - X2_try)/dummy
+            ! Guard: prevent SIGFPE when LM step is degenerate (dummy ≈ 0)
+            if(abs(dummy) < EPS1MIN) then
+                dummy = sign(EPS1MIN, dummy)
+                rho = ZERO
+            else
+                rho = (X2 - X2_try)/dummy
+            end if
             if(ipr >= 2) write(jpr,'(6(a,es11.4))') 'rho=',rho,' X2=',X2,' X2_try=',X2_try, &
                 ' X2_old=',X2_old,' dummy=',dummy
 
