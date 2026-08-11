@@ -176,7 +176,11 @@ contains
         lambda_UP_fac = lamUP
         lambda_0 = 0.01_rn   ! 0.1_rn  !  110._rn
         do i=1,npnt
-            weight(i) = ONE / uy_dat(i)**TWO
+            if(uy_dat(i) > EPS1MIN) then
+                weight(i) = ONE / uy_dat(i)**TWO
+            else
+                weight(i) = ONE / EPS1MIN**TWO
+            end if
         end do
 
         Nfit = 0
